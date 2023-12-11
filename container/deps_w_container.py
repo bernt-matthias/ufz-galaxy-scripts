@@ -83,7 +83,10 @@ for condaenv in condaenv2tools:
     if has_container == len(tools):
         if args.remove:
             print(f"removing {condaenv}")
-            shutil.rmtree(condaenv)
+            try:
+                shutil.rmtree(condaenv)
+            except Exception as e:
+                logger.error(f"could not remove {condaenv}: {e}")
             print(f"removed {condaenv}")
         else:
             print(f"would remove {condaenv}")

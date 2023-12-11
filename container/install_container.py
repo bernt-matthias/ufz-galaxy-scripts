@@ -16,6 +16,7 @@ from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.tool_dependencies import ToolDependenciesClient
 from bioblend.galaxy.tools import ToolClient
 from bioblend.galaxy.container_resolution  import ContainerResolutionClient
+from galaxy.tool_util.version import parse_version
 from galaxy.util.tool_version import remove_version_from_guid
 import packaging.version 
 
@@ -40,7 +41,12 @@ def get_tool_list(galaxy_instance: GalaxyInstance, include: List[str], exclude: 
     
         if tool_id not in tool_versions:
             tool_versions[tool_id] = []
-        tool_versions[tool_id].append((packaging.version.parse(tool["version"]), tool["id"]))
+        try:
+            version = parse_version(tool["version"])
+        except:
+            logger.error(f"could not parse version {version} of tool {tool}")
+            continue
+        tool_versions[tool_id].append((version, tool["id"]))
     tool_list = []
     for tool_id in tool_versions:
         tool_versions[tool_id] = sorted(tool_versions[tool_id], reverse=True)
