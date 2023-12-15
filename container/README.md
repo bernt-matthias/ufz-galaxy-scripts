@@ -17,7 +17,7 @@ When installing tools I disabled automatic installation any resolver
 dependencies, i.e. conda dependencies, but existing conda environments
 are kept.
 
-I setup the container resolvers in `galaxy.yml`` such that only
+I setup the container resolvers in `galaxy.yml` such that only
 `cached_explicit_singularity`, `cached_mulled_singularity` and
 `mulled_singularity` are used:
 
