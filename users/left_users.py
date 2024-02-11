@@ -57,10 +57,11 @@ user_client = UserClient(galaxy_instance=galaxy_instance)
 users = user_client.get_users()
 
 history_client = HistoryClient(galaxy_instance)
-histories = history_client.get_histories(all=True)
+histories = history_client.get_histories(all=True) 
+history_ids = set([h['id'] for h in histories])
 
 left_user_by_id = {}
-
+left_histories_by_user_id = {}
 for user in users:
     user_id = user['id']
     username= user['username']
@@ -74,15 +75,16 @@ for user in users:
         print(f"still present {username} {email} {uid}")
         continue
     left_user_by_id[user_id] = user
+    left_histories_by_user_id[user_id] = []
 
-print(f"{len(left_user_by_id)} users left")
+print(f"{len(left_user_by_id)}/{len(users)} users left")
 
-left_histories_by_user_id = {}
 size_left = 0
 n_left = 0
 size_present = 0
 n_present = 0
-for history in histories:
+for i, history in enumerate(histories):
+    print(f"processing {i}/{len(histories)}")
     history_details = galaxy_instance.histories.show_history(history['id'])
     user_id = history_details['user_id']
     size = history_details['size']
@@ -91,11 +93,18 @@ for history in histories:
         n_present += 1
         continue
     size_left += size
-    n_left += size
-    try:
-        left_histories_by_user_id[user_id].append(history)
-    except KeyError:
-        left_histories_by_user_id[user_id] = [history]
+    n_left += 1
+    left_histories_by_user_id[user_id].append(history_details)
         
-print(f"left users: {size_left} in {n_left}")
-print(f"present users: {size_present} in {n_present}")
+print(f"left users: {size_left / (1024 ** 3)} TB in {n_left} histories")
+print(f"present users: {size_present / (1024 ** 3)} TB in {n_present} histories")
+
+for user_id in left_user_by_id:
+    username = left_user_by_id[user_id]["username"]
+    size = 0
+    with open(f"{username}.histories", "w") as hf:
+        for history_details in left_histories_by_user_id[user_id]:
+            hf.write(f"{history_details['id']}\n")
+            size += history_details['size']
+    print(f"{username} {len(left_histories_by_user_id[user_id])} {size / (1024**3)}")
+
