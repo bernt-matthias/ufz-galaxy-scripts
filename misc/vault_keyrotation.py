@@ -29,10 +29,12 @@ with open(config) as f:
     vc = yaml.safe_load(f)
 
 new_key = Fernet.generate_key().decode("utf-8")
-print(f'loaded {len(vc["encryption_keys"])} keys')
+
 if vc["encryption_keys"] is None:
+    print(f'loaded 0 keys')
     vc["encryption_keys"] = [new_key]
 else:
+    print(f'loaded {len(vc["encryption_keys"])} keys')
     vc["encryption_keys"] = [new_key] + vc["encryption_keys"]
 
 if maxkeys and len(vc["encryption_keys"]) > maxkeys:
