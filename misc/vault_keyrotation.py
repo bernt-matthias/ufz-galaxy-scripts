@@ -30,7 +30,7 @@ with open(config) as f:
 
 new_key = Fernet.generate_key().decode("utf-8")
 
-if vc["encryption_keys"] is None:
+if vc.get("encryption_keys") is None:
     print(f'loaded 0 keys')
     vc["encryption_keys"] = [new_key]
 else:
