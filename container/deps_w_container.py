@@ -69,6 +69,7 @@ logger.info(f"Found {len(condaenv2tools)} conda environments")
 # check if all tools using a conda env have a installed container
 container_resolution_client = ContainerResolutionClient(galaxy_instance = galaxy_instance)
 for condaenv in condaenv2tools:
+    condaenv_base = os.path.basename(condaenv)
     if condaenv.endswith("/_galaxy_"):
         continue
     tools = condaenv2tools[condaenv]
@@ -79,7 +80,9 @@ for condaenv in condaenv2tools:
             container = r["status"].get("environment_path")
             if container and os.path.exists(container):
                 has_container += 1
-    logger.debug(f"{condaenv} -> {has_container == len(tools)}")
+            else:
+                logger.debug(f"{condaenv_base} no container for tool {tool}")
+    logger.debug(f"{condaenv} -> {has_container == len(tools)} (coverage {has_container}/{len(tools)})")
     if has_container == len(tools):
         if args.remove:
             print(f"removing {condaenv}")
