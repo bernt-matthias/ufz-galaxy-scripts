@@ -17,9 +17,9 @@ parser.add_argument(
     required=True,
     help="vault config file",
 )
-parser.add_argument(
-    "--maxkeys", action="store", type=int, default=None, help="maximum number of keys"
-)
+# parser.add_argument(
+#     "--maxkeys", action="store", type=int, default=None, help="maximum number of keys"
+# )
 args = parser.parse_args()
 
 config = args.config
@@ -37,8 +37,8 @@ else:
     print(f'loaded {len(vc["encryption_keys"])} keys')
     vc["encryption_keys"] = [new_key] + vc["encryption_keys"]
 
-if maxkeys and len(vc["encryption_keys"]) > maxkeys:
-    vc["encryption_keys"] = vc.encryption_keys[:-1]
+# if maxkeys and len(vc["encryption_keys"]) > maxkeys:
+#     vc["encryption_keys"] = vc.encryption_keys[:-1]
 
 print(f'writing {len(vc["encryption_keys"])} keys')
 with open(config, "w") as f:
