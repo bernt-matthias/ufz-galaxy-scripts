@@ -5,6 +5,8 @@ import subprocess
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.users import  UserClient
 from bioblend.galaxy.histories import HistoryClient
+from ldap3 import Server, Connection, ALL, SUBTREE
+
 
 def run_external_program(command):
     try:
@@ -31,6 +33,12 @@ parser.add_argument(
 parser.add_argument(
     "--key", type=str, action="store", required=True, default=None, help="API key"
 )
+parser.add_argument(
+    "--ldap-url", type=str, action="store", required=True, default=None, help="URL of the LDAP server"
+)
+parser.add_argument(
+    "--all-users", action="store_true", default=False, help="Process histories of all users, default only users not in LDAP"
+)
 parser.add_argument( '-log',
                      '--loglevel',
                      choices=['debug', 'info', 'warning', 'error'],
@@ -53,58 +61,67 @@ handler.setFormatter(formatter)
 
 galaxy_instance = GalaxyInstance(url=args.url, key=args.key)
 
+ldap_conn = Connection(args.ldap_url, auto_bind=True)
+base_dn = 'ou=people,dc=ufz,dc=de'
+ldap_conn.search(base_dn, "(objectClass=*)", SUBTREE, attributes = ['uid', 'cn', 'mail'])
+ldap_uids = set()
+for entry in ldap_conn.entries:
+    ldap_uids.add(entry.uid.value)
+ldap_conn.unbind()
+logger.info(f"Found {len(ldap_uids)} users in LDAP")
+
 user_client = UserClient(galaxy_instance=galaxy_instance)
 users = user_client.get_users()
+
+user_by_id = {}
+histories_by_user_id = {}
+for user in users:
+    uid = user['id']
+    username= user.get('username')
+    email = user['email']
+
+    if not args.all_users and username in ldap_uids:
+        logger.debug(f"Still present {username} {email} {uid}")
+        continue
+    logger.info(f"Consider {username} {email} {uid}")
+
+    user_by_id[uid] = user
+    histories_by_user_id[uid] = []
+logger.info(f"Total {len(user_by_id)}/{len(users)} Galaxy users to deleted")
 
 history_client = HistoryClient(galaxy_instance)
 histories = history_client.get_histories(all=True) 
 history_ids = set([h['id'] for h in histories])
-
-left_user_by_id = {}
-left_histories_by_user_id = {}
-for user in users:
-    user_id = user['id']
-    username= user['username']
-    email = user['email']
-    exit_code, uid, stderr = run_external_program(["id", "-u", username])
-    try:
-        uid = int(uid)
-    except ValueError:
-        uid = -1
-    if not exit_code and uid >= 1000:
-        print(f"still present {username} {email} {uid}")
-        continue
-    left_user_by_id[user_id] = user
-    left_histories_by_user_id[user_id] = []
-
-print(f"{len(left_user_by_id)}/{len(users)} users left")
 
 size_left = 0
 n_left = 0
 size_present = 0
 n_present = 0
 for i, history in enumerate(histories):
-    print(f"processing {i}/{len(histories)}")
+    if i % 100 == 0:
+        print(f"processing {i+1}/{len(histories)}")
     history_details = galaxy_instance.histories.show_history(history['id'])
     user_id = history_details['user_id']
     size = history_details['size']
-    if user_id not in left_user_by_id:
+    if user_id not in user_by_id:
         size_present += size
         n_present += 1
         continue
     size_left += size
     n_left += 1
-    left_histories_by_user_id[user_id].append(history_details)
+    histories_by_user_id[user_id].append(history_details)
         
-print(f"left users: {size_left / (1024 ** 3)} TB in {n_left} histories")
-print(f"present users: {size_present / (1024 ** 3)} TB in {n_present} histories")
+print(f"considered users: {size_left / (1024 ** 3)} TB in {n_left} histories")
+print(f"ignored    users: {size_present / (1024 ** 3)} TB in {n_present} histories")
 
-for user_id in left_user_by_id:
-    username = left_user_by_id[user_id]["username"]
-    size = 0
+for user_id in user_by_id:
+    username = user_by_id[user_id]["username"]
+    user_by_id[user_id]["size"] = 0
     with open(f"{username}.histories", "w") as hf:
-        for history_details in left_histories_by_user_id[user_id]:
+        for history_details in histories_by_user_id[user_id]:
             hf.write(f"{history_details['id']}\n")
-            size += history_details['size']
-    print(f"{username} {len(left_histories_by_user_id[user_id])} {size / (1024**3)}")
+            user_by_id[user_id]["size"] += history_details['size']
+
+for uid, user in sorted(user_by_id.items(), key=lambda d: d[1]['size']):
+    print(f"{user['username']} {len(histories_by_user_id[uid])} {user['size'] / (1024**3)}")
 
