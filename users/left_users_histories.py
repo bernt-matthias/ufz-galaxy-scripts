@@ -105,7 +105,7 @@ for user in users:
 
     user_by_id[uid] = user
     histories_by_user_id[uid] = []
-logger.info(f"Total {len(user_by_id)}/{len(users)} Galaxy users to deleted")
+logger.info(f"Total {len(user_by_id)}/{len(users)} Galaxy users to delete")
 
 history_client = HistoryClient(galaxy_instance)
 histories = history_client.get_histories(all=True)
@@ -141,8 +141,9 @@ for user_id in user_by_id:
         for history_details in histories_by_user_id[user_id]:
             hf.write(f"{history_details['id']}\n")
             user_by_id[user_id]["size"] += history_details["size"]
+    break
 
 for uid, user in sorted(user_by_id.items(), key=lambda d: d[1]["size"]):
     print(
-        f"{user['username']} {len(histories_by_user_id[uid])} {user['size'] / (1024**3)}"
+        f"{user['username']} {len(histories_by_user_id[uid])} histories {user['size'] / (1024**3)} TB"
     )
