@@ -25,7 +25,9 @@ def run_external_program(command):
         return exit_code, stdout, stderr
 
 
-parser = argparse.ArgumentParser(description="List / install containers")
+parser = argparse.ArgumentParser(
+    description="Get histories of users that left the UFZ, i.e. are not in the LDAP anymore"
+)
 parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
