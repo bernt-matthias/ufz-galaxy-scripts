@@ -136,13 +136,15 @@ if n_present:
 
 for user_id in user_by_id:
     username = user_by_id[user_id]["username"]
-    user_by_id[user_id]["size"] = 0
     with open(os.path.join(args.outdir, f"{username}.histories"), "w") as hf:
         for history_details in histories_by_user_id[user_id]:
             hf.write(f"{history_details['id']}\n")
-            user_by_id[user_id]["size"] += history_details["size"]
     break
 
+for user_id in user_by_id:
+    user_by_id[user_id]["size"] = 0
+    for history_details in histories_by_user_id[user_id]:
+        user_by_id[user_id]["size"] += history_details["size"]
 for uid, user in sorted(user_by_id.items(), key=lambda d: d[1]["size"]):
     print(
         f"{user['username']} {len(histories_by_user_id[uid])} histories {user['size'] / (1024**3)} TB"
