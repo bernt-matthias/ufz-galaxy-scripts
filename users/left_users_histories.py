@@ -136,7 +136,7 @@ if n_present:
 
 for user_id in user_by_id:
     username = user_by_id[user_id]["username"]
-    with open(os.path.join(args.outdir, f"{username}.histories"), "w") as hf:
+    with open(os.path.join(args.outdir, f"{username}.histories"), "a") as hf:
         for history_details in histories_by_user_id[user_id]:
             hf.write(f"{history_details['id']}\n")
     break
