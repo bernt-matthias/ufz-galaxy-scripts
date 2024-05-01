@@ -130,9 +130,9 @@ for i, history in enumerate(histories):
     histories_by_user_id[user_id].append(history_details)
 
 if n_left:
-    print(f"considered users: {size_left / (1024 ** 3)} TB in {n_left} histories")
+    print(f"considered users: {size_left / (1024 ** 3)} GB in {n_left} histories")
 if n_present:
-    print(f"ignored users: {size_present / (1024 ** 3)} TB in {n_present} histories")
+    print(f"ignored users: {size_present / (1024 ** 3)} GB in {n_present} histories")
 
 for user_id in user_by_id:
     username = user_by_id[user_id]["username"]
@@ -147,5 +147,5 @@ for user_id in user_by_id:
         user_by_id[user_id]["size"] += history_details["size"]
 for uid, user in sorted(user_by_id.items(), key=lambda d: d[1]["size"]):
     print(
-        f"{user['username']} {len(histories_by_user_id[uid])} histories {user['size'] / (1024**3)} TB"
+        f"{user['username']} {len(histories_by_user_id[uid])} histories {user['size'] / (1024**3)} GB"
     )
