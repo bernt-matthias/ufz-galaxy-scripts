@@ -117,12 +117,13 @@ if n_left:
 if n_present:
     print(f"ignored users: {size_present / (1024 ** 3)} GB in {n_present} histories")
 
-for user_id in user_by_id:
+for i, user_id in enumerate(user_by_id):
     username = user_by_id[user_id]["username"]
     with open(os.path.join(args.outdir, f"{username}.histories"), "a") as hf:
         for history_details in histories_by_user_id[user_id]:
             hf.write(f"{history_details['id']}\n")
-    break
+    if i > 5:
+        break
 
 for user_id in user_by_id:
     user_by_id[user_id]["size"] = 0
