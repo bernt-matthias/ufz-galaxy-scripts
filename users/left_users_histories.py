@@ -1,28 +1,11 @@
 import argparse
 import logging
 import os.path
-import subprocess
 
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.users import UserClient
 from bioblend.galaxy.histories import HistoryClient
 from ldap3 import Server, Connection, ALL, SUBTREE
-
-
-def run_external_program(command):
-    try:
-        result = subprocess.run(
-            command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        exit_code = result.returncode
-        stdout = result.stdout.decode("utf-8")
-        stderr = result.stderr.decode("utf-8")
-        return exit_code, stdout, stderr
-    except subprocess.CalledProcessError as e:
-        exit_code = e.returncode
-        stderr = e.stderr.decode("utf-8")
-        stdout = e.stdout.decode("utf-8")
-        return exit_code, stdout, stderr
 
 
 parser = argparse.ArgumentParser(
