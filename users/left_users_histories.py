@@ -5,7 +5,7 @@ import os.path
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.users import UserClient
 from bioblend.galaxy.histories import HistoryClient
-from ldap3 import Server, Connection, ALL, SUBTREE
+from ldap3 import Connection, SUBTREE
 
 
 parser = argparse.ArgumentParser(

@@ -1,7 +1,5 @@
 import argparse
 import logging
-import os.path
-import subprocess
 
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.users import UserClient
@@ -54,7 +52,7 @@ galaxy_instance = GalaxyInstance(url=args.url, key=args.key)
 
 user_client = UserClient(galaxy_instance=galaxy_instance)
 users = user_client.get_users(f_name=args.username)
-users = [u for u in users if u.get('username') == args.username] 
+users = [u for u in users if u.get("username") == args.username]
 assert len(users) == 1, f"Found {len(users)} users with name {args.username}"
 uid = users[0]["id"]
 user_client.delete_user(uid, purge=args.purge)
