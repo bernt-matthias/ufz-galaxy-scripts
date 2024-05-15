@@ -7,9 +7,7 @@ from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.tools import ToolClient
 
 
-parser = argparse.ArgumentParser(
-    description="Get all installed tools"
-)
+parser = argparse.ArgumentParser(description="Get all installed tools")
 parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
@@ -47,52 +45,52 @@ for i, tool in enumerate(tools):
     if not tool.get("tool_shed_repository"):
         continue
     if not tool.get("panel_section_name"):
-        if tool.get('model_class') == 'DataManagerTool':
+        if tool.get("model_class") == "DataManagerTool":
             tool["panel_section_name"] = "Data Managers"
         else:
             log.error(f"Missing tool panel section for {tool}")
             sys.exit(1)
 
-    name = tool['tool_shed_repository']['name']
-    owner = tool['tool_shed_repository']['owner']
-    revision = tool['tool_shed_repository']['changeset_revision']
-    section = tool['panel_section_name']
+    name = tool["tool_shed_repository"]["name"]
+    owner = tool["tool_shed_repository"]["owner"]
+    revision = tool["tool_shed_repository"]["changeset_revision"]
+    section = tool["panel_section_name"]
 
     if (name, owner) not in tool_list:
         tool_list[(name, owner)] = {
-            'name': name,
-            'owner': owner,
-            'tool_panel_section_label': section,
-            'revisions': set()
+            "name": name,
+            "owner": owner,
+            "tool_panel_section_label": section,
+            "revisions": set(),
         }
-    tool_list[(name, owner)]['revisions'].add(revision)
+    tool_list[(name, owner)]["revisions"].add(revision)
 
 for tool in tool_list:
-    tool_list[tool]['revisions'] = list(tool_list[tool]['revisions'])
+    tool_list[tool]["revisions"] = list(tool_list[tool]["revisions"])
 
 with open("tool_list.yaml.lock", "w") as lock_f:
     lock_f.write(
         yaml.dump(
             {
-                'install_repository_dependencies': True,
-                'install_resolver_dependencies': False,
-                'install_tool_dependencies': False,
-                'tools': list(tool_list.values())
+                "install_repository_dependencies": True,
+                "install_resolver_dependencies": False,
+                "install_tool_dependencies": False,
+                "tools": list(tool_list.values()),
             }
         )
     )
 
 for tool in tool_list:
-    del tool_list[tool]['revisions']
+    del tool_list[tool]["revisions"]
 
 with open("tool_list.yaml", "w") as lock_f:
     lock_f.write(
         yaml.dump(
             {
-                'install_repository_dependencies': True,
-                'install_resolver_dependencies': False,
-                'install_tool_dependencies': False,
-                'tools': list(tool_list.values())
+                "install_repository_dependencies": True,
+                "install_resolver_dependencies": False,
+                "install_tool_dependencies": False,
+                "tools": list(tool_list.values()),
             }
         )
     )
