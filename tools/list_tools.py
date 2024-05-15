@@ -1,5 +1,6 @@
 import argparse
 import logging
+import sys
 
 import yaml
 
@@ -48,7 +49,7 @@ for i, tool in enumerate(tools):
         if tool.get("model_class") == "DataManagerTool":
             tool["panel_section_name"] = "Data Managers"
         else:
-            log.error(f"Missing tool panel section for {tool}")
+            logging.error(f"Missing tool panel section for {tool}")
             sys.exit(1)
 
     name = tool["tool_shed_repository"]["name"]
