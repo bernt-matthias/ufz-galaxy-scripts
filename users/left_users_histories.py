@@ -99,7 +99,9 @@ n_present = 0
 history_client = HistoryClient(galaxy_instance)
 offset = 1
 while True:
-    histories = history_client.get_histories(all=True, limit=USER_BATCH_SIZE, offset=offset, keys=["id", "user_id", "size"])
+    histories = history_client.get_histories(
+        all=True, limit=USER_BATCH_SIZE, offset=offset, keys=["id", "user_id", "size"]
+    )
     if not histories:
         break
     offset += USER_BATCH_SIZE
@@ -116,9 +118,13 @@ while True:
         histories_by_user_id[user_id].append(history)
 
 if n_left:
-    print(f"considered users: {round(size_left / (1024 ** 3))} GB in {n_left} histories")
+    print(
+        f"considered users: {round(size_left / (1024 ** 3))} GB in {n_left} histories"
+    )
 if n_present:
-    print(f"ignored users: {round(size_present / (1024 ** 3))} GB in {n_present} histories")
+    print(
+        f"ignored users: {round(size_present / (1024 ** 3))} GB in {n_present} histories"
+    )
 
 for user_id in user_by_id:
     username = user_by_id[user_id]["username"]
