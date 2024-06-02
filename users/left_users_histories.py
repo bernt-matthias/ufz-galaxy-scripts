@@ -7,6 +7,7 @@ from bioblend.galaxy.users import UserClient
 from bioblend.galaxy.histories import HistoryClient
 from ldap3 import Connection, SUBTREE
 
+USER_BATCH_SIZE = 10000
 
 parser = argparse.ArgumentParser(
     description="Get histories of users that left the UFZ, i.e. are not in the LDAP anymore"
@@ -90,32 +91,40 @@ for user in users:
     histories_by_user_id[uid] = []
 logger.info(f"Total {len(user_by_id)}/{len(users)} Galaxy users to delete")
 
-history_client = HistoryClient(galaxy_instance)
-histories = history_client.get_histories(all=True)
-history_ids = set([h["id"] for h in histories])
-
 size_left = 0
 n_left = 0
 size_present = 0
 n_present = 0
-for i, history in enumerate(histories):
-    if i % 100 == 0:
-        print(f"processing {i+1}/{len(histories)}")
-    history_details = galaxy_instance.histories.show_history(history["id"])
-    user_id = history_details["user_id"]
-    size = history_details["size"]
-    if user_id not in user_by_id:
-        size_present += size
-        n_present += 1
-        continue
-    size_left += size
-    n_left += 1
-    histories_by_user_id[user_id].append(history_details)
+
+history_client = HistoryClient(galaxy_instance)
+offset = 1
+while True:
+    histories = history_client.get_histories(
+        all=True, limit=USER_BATCH_SIZE, offset=offset, keys=["id", "user_id", "size"]
+    )
+    if not histories:
+        break
+    offset += USER_BATCH_SIZE
+
+    for history in histories:
+        user_id = history["user_id"]
+        size = history["size"]
+        if user_id not in user_by_id:
+            size_present += size
+            n_present += 1
+            continue
+        size_left += size
+        n_left += 1
+        histories_by_user_id[user_id].append(history)
 
 if n_left:
-    print(f"considered users: {size_left / (1024 ** 3)} GB in {n_left} histories")
+    print(
+        f"considered users: {round(size_left / (1024 ** 3))} GB in {n_left} histories"
+    )
 if n_present:
-    print(f"ignored users: {size_present / (1024 ** 3)} GB in {n_present} histories")
+    print(
+        f"ignored users: {round(size_present / (1024 ** 3))} GB in {n_present} histories"
+    )
 
 for user_id in user_by_id:
     username = user_by_id[user_id]["username"]
