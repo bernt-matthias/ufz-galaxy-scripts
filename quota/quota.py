@@ -105,11 +105,7 @@ except ConnectionError:
 users = gi.users.get_users()
 
 # get mapping from email to users
-mail2user = {}
-for user in users:
-    if user["deleted"]:
-        continue
-    mail2user[user["email"]] = user
+mail2user = {user["email"]: user for user in users}
 
 # get mapping from email to quotas
 # and delete expired quotas
