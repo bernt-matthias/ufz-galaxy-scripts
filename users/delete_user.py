@@ -55,4 +55,7 @@ users = user_client.get_users(f_name=args.username)
 users = [u for u in users if u.get("username") == args.username]
 assert len(users) == 1, f"Found {len(users)} users with name {args.username}"
 uid = users[0]["id"]
-user_client.delete_user(uid, purge=args.purge)
+
+user_client.delete_user(uid)
+if args.purge:
+    user_client.delete_user(uid, purge=args.purge)
