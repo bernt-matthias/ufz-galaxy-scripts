@@ -146,7 +146,7 @@ for deleted in [False, True]:
                 "UFZ Galaxy: quota expiration",
                 f"Your additional Galaxy quota of {quota['display_amount']} expired."
             )
-        if datetime.now() > expires - timedelta(days=30):
+        if (expires - datetime.now()) in [30, 7, 1]:
             send_notification(
                 email,
                 "UFZ Galaxy: quota expiration",
