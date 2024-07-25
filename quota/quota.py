@@ -188,7 +188,7 @@ with open(args.file) as fh:
                 quota_id=mail2quota[user["email"]]["id"],
                 name=user["username"],
                 description=line[2],
-                # default='no',
+                default=None,
                 amount=amount,
                 operation="+",
                 in_users=[user["id"]],
