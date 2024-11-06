@@ -13,7 +13,7 @@ import logging
 import os
 import smtplib
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
@@ -38,7 +38,7 @@ def send_notification(receiver_email: str, subject: str, message: str) -> bool:
     try:
         server = smtplib.SMTP("localhost")
     except ConnectionRefusedError:
-        logger.error(f"Could not send mail: could not connect to {smtp_server}")
+        logger.error("Could not send mail: could not connect to localhost")
         return False
 
     # Send the email
@@ -61,7 +61,7 @@ parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
 parser.add_argument(
-    "--key", type=str, action="store", required=True, default=None, help="API key"
+    "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
 )
 parser.add_argument(
     "--file",
@@ -93,7 +93,8 @@ logger.addHandler(handler)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
-gi = galaxy.GalaxyInstance(url=args.url, key=args.key)
+key = os.environ.get('API_KEY', args.key)
+gi = galaxy.GalaxyInstance(url=args.url, key=key)
 
 try:
     version = gi.config.get_version()
@@ -170,7 +171,7 @@ with open(args.file) as fh:
         try:
             user = mail2user[line[0]]
         except KeyError:
-            log.error(f"No such user: {line[0]}")
+            logger.error(f"No such user: {line[0]}")
 
         amount = line[1]
 

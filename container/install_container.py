@@ -7,18 +7,16 @@ or version (--latest)
 
 import argparse
 import logging
+import os
 import os.path
 import re
-import sys
 from typing import List
 
 from bioblend.galaxy import GalaxyInstance
-from bioblend.galaxy.tool_dependencies import ToolDependenciesClient
 from bioblend.galaxy.tools import ToolClient
 from bioblend.galaxy.container_resolution  import ContainerResolutionClient
 from galaxy.tool_util.version import parse_version
 from galaxy.util.tool_version import remove_version_from_guid
-import packaging.version 
 
 
 def get_tool_list(galaxy_instance: GalaxyInstance, include: List[str], exclude: List[str], latest: bool):
@@ -58,7 +56,9 @@ def get_tool_list(galaxy_instance: GalaxyInstance, include: List[str], exclude: 
 
 parser = argparse.ArgumentParser(description='List / install containers')
 parser.add_argument('--url', type=str, action='store', required=True, default=None, help='Galaxy URL')
-parser.add_argument('--key', type=str, action='store', required=True, default=None, help='API key')
+parser.add_argument(
+    "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
+)
 parser.add_argument(
     '--include',
     type=str,
@@ -97,7 +97,8 @@ logger.addHandler(handler)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 
-galaxy_instance = GalaxyInstance(url=args.url, key=args.key)
+key = os.environ.get('API_KEY', args.key)
+galaxy_instance = GalaxyInstance(url=args.url, key=key)
 
 # get tools (matching filters and latest arguments)
 tool_list = get_tool_list(galaxy_instance, args.include, args.exclude, args.latest)

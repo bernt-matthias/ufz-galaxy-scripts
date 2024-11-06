@@ -6,13 +6,9 @@ or version (--latest)
 """
 
 import argparse
-import logging
-import os.path
-import re
 import sys
-from typing import List
+
 from bioblend.toolshed import ToolShedInstance
-from yaml import load, dump
 
 NEWLINE = "\n"
 
