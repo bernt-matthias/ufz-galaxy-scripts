@@ -23,7 +23,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-key = os.environ.get('API_KEY', args.key)
+key = os.environ.get('GALAXY_API_KEY', args.key)
 galaxy_instance = GalaxyInstance(url=args.url, key=key)
 tool_dependency_client = ToolDependenciesClient(galaxy_instance=galaxy_instance)
 unused_paths = tool_dependency_client.unused_dependency_paths()

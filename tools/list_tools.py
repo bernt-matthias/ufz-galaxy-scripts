@@ -38,7 +38,7 @@ logger.addHandler(handler)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
-key = os.environ.get('API_KEY', args.key)
+key = os.environ.get('GALAXY_API_KEY', args.key)
 galaxy_instance = GalaxyInstance(url=args.url, key=key)
 tool_client = ToolClient(galaxy_instance)
 tools = tool_client.get_tools()
