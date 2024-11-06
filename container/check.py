@@ -4,9 +4,8 @@ Check for tools that are not covered by conda or containers
 
 import argparse
 import logging
+import os
 import os.path
-import shutil
-import sys
 
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.container_resolution  import ContainerResolutionClient
@@ -17,7 +16,7 @@ parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
 parser.add_argument(
-    "--key", type=str, action="store", required=True, default=None, help="API key"
+    "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
 )
 parser.add_argument( '-log',
                      '--loglevel',
@@ -39,8 +38,8 @@ logger.addHandler(handler)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 
-
-galaxy_instance = GalaxyInstance(url=args.url, key=args.key)
+key = os.environ.get('GALAXY_API_KEY', args.key)
+galaxy_instance = GalaxyInstance(url=args.url, key=key)
 tool_dependency_client = ToolDependenciesClient(galaxy_instance=galaxy_instance)
 
 # get mapping from conda envs to tools using it

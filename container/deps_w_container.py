@@ -4,11 +4,12 @@ remove unused conda dependencies
 
 import argparse
 import logging
+import os
 import os.path
 import shutil
 
 from bioblend.galaxy import GalaxyInstance
-from bioblend.galaxy.container_resolution  import ContainerResolutionClient
+from bioblend.galaxy.container_resolution import ContainerResolutionClient
 from bioblend.galaxy.tool_dependencies import ToolDependenciesClient
 
 parser = argparse.ArgumentParser(description="List / install containers")
@@ -16,7 +17,7 @@ parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
 parser.add_argument(
-    "--key", type=str, action="store", required=True, default=None, help="API key"
+    "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
 )
 parser.add_argument(
     "--remove",
@@ -24,11 +25,13 @@ parser.add_argument(
     default=False,
     help="remove unused dependencies, default: just list",
 )
-parser.add_argument( '-log',
-                     '--loglevel',
-                     choices=['debug', 'info', 'warning', 'error'],
-                     default='warning',
-                     help='Provide logging level. Example --loglevel debug, default=warning' )
+parser.add_argument(
+    '-log',
+    '--loglevel',
+    choices=['debug', 'info', 'warning', 'error'],
+    default='warning',
+    help='Provide logging level. Example --loglevel debug, default=warning'
+)
 args = parser.parse_args()
 
 logging.getLogger().setLevel(logging.WARNING)
@@ -44,12 +47,12 @@ logger.addHandler(handler)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 
-
-galaxy_instance = GalaxyInstance(url=args.url, key=args.key)
+key = os.environ.get('GALAXY_API_KEY', args.key)
+galaxy_instance = GalaxyInstance(url=args.url, key=key)
 tool_dependency_client = ToolDependenciesClient(galaxy_instance=galaxy_instance)
 
 # get mapping from conda envs to tools using it
-tb = tool_dependency_client.summarize_toolbox(index_by = "tools")
+tb = tool_dependency_client.summarize_toolbox(index_by="tools")
 condaenv2tools = {}
 for t in tb:
     status = t["status"]
@@ -67,7 +70,7 @@ for t in tb:
 logger.info(f"Found {len(condaenv2tools)} conda environments")
 
 # check if all tools using a conda env have a installed container
-container_resolution_client = ContainerResolutionClient(galaxy_instance = galaxy_instance)
+container_resolution_client = ContainerResolutionClient(galaxy_instance=galaxy_instance)
 for condaenv in condaenv2tools:
     condaenv_base = os.path.basename(condaenv)
     if condaenv.endswith("/_galaxy_"):
@@ -75,14 +78,14 @@ for condaenv in condaenv2tools:
     tools = condaenv2tools[condaenv]
     has_container = 0
     for tool in tools:
-        res = container_resolution_client.resolve_toolbox(tool_ids = [tool])
+        res = container_resolution_client.resolve_toolbox(tool_ids=[tool])
         for i, r in enumerate(res):
             container = r["status"].get("environment_path")
             if container and os.path.exists(container):
                 has_container += 1
             else:
                 logger.debug(f"{condaenv_base} no container for tool {tool}")
-    logger.debug(f"{condaenv} -> {has_container == len(tools)} (coverage {has_container}/{len(tools)})")
+    logger.debug(f"{condaenv_base} -> {has_container == len(tools)} (coverage {has_container}/{len(tools)})")
     if has_container == len(tools):
         if args.remove:
             print(f"removing {condaenv}")

@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import os.path
 
 from bioblend.galaxy import GalaxyInstance
@@ -16,7 +17,7 @@ parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
 parser.add_argument(
-    "--key", type=str, action="store", required=True, default=None, help="API key"
+    "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
 )
 parser.add_argument(
     "--ldap-url",
@@ -61,7 +62,8 @@ logger.addHandler(handler)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
-galaxy_instance = GalaxyInstance(url=args.url, key=args.key)
+key = os.environ.get('GALAXY_API_KEY', args.key)
+galaxy_instance = GalaxyInstance(url=args.url, key=key)
 
 ldap_conn = Connection(args.ldap_url, auto_bind=True)
 base_dn = "ou=people,dc=ufz,dc=de"

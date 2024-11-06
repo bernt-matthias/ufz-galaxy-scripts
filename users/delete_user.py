@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 
 from bioblend.galaxy import GalaxyInstance
 from bioblend.galaxy.users import UserClient
@@ -10,7 +11,7 @@ parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
 parser.add_argument(
-    "--key", type=str, action="store", required=True, default=None, help="API key"
+    "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
 )
 parser.add_argument(
     "--username",
@@ -48,7 +49,8 @@ logger.addHandler(handler)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
-galaxy_instance = GalaxyInstance(url=args.url, key=args.key)
+key = os.environ.get('GALAXY_API_KEY', args.key)
+galaxy_instance = GalaxyInstance(url=args.url, key=key)
 
 user_client = UserClient(galaxy_instance=galaxy_instance)
 users = user_client.get_users(f_name=args.username)
