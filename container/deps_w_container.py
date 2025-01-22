@@ -55,7 +55,11 @@ tool_dependency_client = ToolDependenciesClient(galaxy_instance=galaxy_instance)
 tb = tool_dependency_client.summarize_toolbox(index_by="tools")
 condaenv2tools = {}
 for t in tb:
-    status = t["status"]
+    # status contains the conda dependencioes for the requirements can be 
+    # - NullDependency: unresolved
+    # - CondaDependency: resolved dependency for 1 requirement
+    # - MergedCondaDependency: resolved conda dependency for all requirements (also if there is only one)
+    status = [_ for _ in t["status"] if _['model_class'] == 'MergedCondaDependency']
     if len(status) == 0:
         continue
     for tool_id in t['tool_ids']:
