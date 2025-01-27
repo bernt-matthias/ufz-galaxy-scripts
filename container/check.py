@@ -61,7 +61,7 @@ for t in tb:
 
 conda_envs = set([x['conda'] for x in tool_stats.values() if 'conda' in x and x['conda']])
 logger.info(f"Found {len(conda_envs)} conda environments")
-conda_prefix = os.path.commonprefix(list(conda_envs))
+conda_prefix = os.path.dirname(os.path.commonprefix(list(conda_envs)))
 conda_envs = set([os.path.basename(e) for e in conda_envs])
 conda_dirs = set(os.listdir(conda_prefix))
 
