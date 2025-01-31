@@ -68,25 +68,14 @@ users = gi.users.get_users()
 usernames = set(user.get("username") for user in users)
 
 
-def recurse(library, folder, deleted, folder_cnt, file_cnt, file_size):
+def recurse(library, folder, deleted, full_path, folder_cnt, file_cnt, file_size):
+    full_path += f"/{folder['name']}"
     folder_id = folder["id"]
-    # determine item_count and deleted (which are both only given if called wo contents=True)
-    folder_details = gi.folders.show_folder(folder_id=folder_id, include_deleted=True)
-    item_count = folder_details["item_count"]
-    deleted = folder_details["deleted"] or deleted
-    if item_count == 0:
-        return folder_cnt, file_cnt, file_size
-    folder_details = gi.folders.show_folder(
-        folder_id=folder_id, contents=True, limit=item_count, include_deleted=True
-    )
-
-    metadata = folder_details["metadata"]
-    full_path = [c[1] for c in metadata["full_path"]]
-    full_path_str = "/".join(full_path)
-    for content in folder_details["folder_contents"]:
+    deleted = folder["deleted"]
+    for content in gi.folders.contents(folder_id=folder_id, limit=1000, include_deleted=True):
         if content["type"] == "folder":
             folder_cnt, file_cnt, file_size = recurse(
-                library, content, deleted, folder_cnt, file_cnt, file_size
+                library, content, deleted, full_path, folder_cnt, file_cnt, file_size
             )
 
         if content["type"] == "folder":
@@ -94,7 +83,7 @@ def recurse(library, folder, deleted, folder_cnt, file_cnt, file_size):
                 folder_cnt += 1
                 if args.delete:
                     gi.folders.delete_folder(content["id"])
-                logger.debug(f"Dangling folder '{content['name']}' in {full_path_str}")
+                logger.debug(f"Dangling folder '{content['name']}' at {full_path}")
         elif content["type"] == "file":
             if not content["deleted"] and deleted:
                 file_cnt += 1
@@ -102,11 +91,11 @@ def recurse(library, folder, deleted, folder_cnt, file_cnt, file_size):
                 if args.delete:
                     gi.libraries.delete_library_dataset(library["id"], content["id"], purged=True)
                 logger.debug(
-                    f"Dangling dataset '{content['name']}' ({humanize.naturalsize(content['raw_size'], binary=False)}) in {full_path_str}"
+                    f"Dangling dataset '{content['name']}' ({humanize.naturalsize(content['raw_size'], binary=False)}) in {full_path}"
                 )
         else:
             logger.error(
-                f"Unknown content type: {content['type']} in {full_path=} {metadata=}"
+                f"Unknown content type: {content['type']} at {full_path_str=} {content=}"
             )
     return folder_cnt, file_cnt, file_size
 
@@ -117,9 +106,8 @@ for library in libraries:
         library_id=library["id"], folder_id=library["root_folder_id"]
     )
     logger.info(f"Processing library {library['name']}")
-    folder_cnt, file_cnt, file_size = recurse(library, root_folder, library["deleted"], 0, 0, 0)
-    # TODO  check root folder
-
+    folder_cnt, file_cnt, file_size = recurse(library, root_folder, library["deleted"], "", 0, 0, 0)
+    # TODO  check root folder""
     if folder_cnt + file_cnt + file_size > 0:
         logger.warning(
             f"{library['name']} Found {folder_cnt} folders {file_cnt} files {humanize.naturalsize(file_size, binary=False)}"
