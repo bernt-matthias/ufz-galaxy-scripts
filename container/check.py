@@ -18,6 +18,12 @@ parser.add_argument(
 parser.add_argument(
     "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
 )
+parser.add_argument( '--conda_prefix',
+                     type=str,
+                     action="store",
+                     required=False,
+                     default=None, 
+                     help='The directory containing Galaxy\'s conda envs. Needs to be specified if there are no conda envs left for galaxy tools' )
 parser.add_argument( '-log',
                      '--loglevel',
                      choices=['debug', 'info', 'warning', 'error'],
@@ -61,7 +67,12 @@ for t in tb:
 
 conda_envs = set([x['conda'] for x in tool_stats.values() if 'conda' in x and x['conda']])
 logger.info(f"Found {len(conda_envs)} conda environments")
-conda_prefix = os.path.dirname(os.path.commonprefix(list(conda_envs)))
+if args.conda_prefix:
+    conda_prefix = args.conda_prefix
+else:
+    if len(conda_envs) == 0:
+        exit("Need to specify --conda_prefix if there are no conda environments left")
+    conda_prefix = os.path.dirname(os.path.commonprefix(list(conda_envs)))
 conda_envs = set([os.path.basename(e) for e in conda_envs])
 conda_dirs = set(os.listdir(conda_prefix))
 
