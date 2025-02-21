@@ -71,7 +71,7 @@ usernames = set(user.get("username") for user in users)
 def recurse(library, folder, deleted, full_path, folder_cnt, file_cnt, file_size):
     full_path += f"/{folder['name']}"
     folder_id = folder["id"]
-    deleted = folder["deleted"]
+    deleted = folder["deleted"] or deleted
     for content in gi.folders.contents(folder_id=folder_id, limit=1000, include_deleted=True):
         if content["type"] == "folder":
             folder_cnt, file_cnt, file_size = recurse(
