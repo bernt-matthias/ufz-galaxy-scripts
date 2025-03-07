@@ -59,9 +59,8 @@ usernames = set(user.get("username") for user in users)
 user_data_library = gi.libraries.get_libraries(name="user_data")[0]
 root_folder = gi.libraries.show_folder(library_id=user_data_library['id'], folder_id = user_data_library["root_folder_id"])
 
-def recurse(user_data_library, folder):
+def process(user_data_library, folder):
     cnt = 0
-    size = 0
     folder_id = folder["id"]
     item_count = gi.folders.show_folder(folder_id=folder_id)["item_count"]
     folder_details = gi.folders.show_folder(folder_id=folder_id, contents=True, limit=item_count)
@@ -75,34 +74,22 @@ def recurse(user_data_library, folder):
                 if not args.all_users and content["name"] in usernames:
                     logger.debug(f"Skip {content['name']}")
                     continue
-                else :
+                else:
                     logger.info(f"Consider {content['name']}")
-
-            rcnt, rsize = recurse(user_data_library, content)
-            cnt += rcnt
-            size += rsize
-
             cnt += 1
             if args.delete:
                 gi.folders.delete_folder(content["id"])
                 logger.info(f"Deleted folder '{content['name']}' in {full_path_str}")
             else:
                 logger.info(f"Could delete folder '{content['name']}' in {full_path_str}")
-        elif content["type"] == "file":
-            size += content['raw_size']
-            if args.delete:
-                gi.libraries.delete_library_dataset(user_data_library["id"], content["id"], purged=True)
-                logger.info(f"Deleted dataset '{content['name']}' ({content['file_size']}) in {full_path_str}")
-            else:
-                logger.info(f"Could delete dataset '{content['name']}' ({content['file_size']}) in {full_path_str}")
         else:
             logger.error(f"Unknown content type: {content['type']} in {full_path=} {metadata=}")
-    return cnt, size
+    return cnt
 
-cnt, size = recurse(user_data_library, root_folder)
+cnt = process(user_data_library, root_folder)
 
 if args.delete:
     if size > 0:
-        logger.warning(f"Deleted {cnt} folders and {size / (1024**3)} GB")
+        logger.warning(f"Deleted {cnt} user folders")
 else:
-    logger.info(f"Could delete {cnt} folders {size / (1024**3)} GB")
+    logger.info(f"Could delete {cnt} user folders")
