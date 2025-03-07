@@ -85,13 +85,13 @@ def process(user_data_library, folder):
                     logger.debug(f"Skip {content['name']}")
                     continue
                 else:
-                    logger.warning(f"Consider {content['name']}")
+                    logger.info(f"Consider {content['name']}")
             cnt += 1
             if args.delete:
                 gi.folders.delete_folder(content["id"])
-                logger.info(f"Deleted folder '{content['name']}' in {full_path_str}")
+                logger.warning(f"Deleted folder '{content['name']}' in {full_path_str}")
             else:
-                logger.info(
+                logger.warning(
                     f"Could delete folder '{content['name']}' in {full_path_str}"
                 )
         else:
@@ -107,4 +107,4 @@ if cnt > 0:
     if args.delete:
         logger.warning(f"Deleted {cnt} user library folders")
     else:
-        logger.info(f"Could delete {cnt} user library folders")
+        logger.warning(f"Could delete {cnt} user library folders")
