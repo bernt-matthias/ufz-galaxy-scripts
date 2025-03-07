@@ -37,7 +37,7 @@ parser.add_argument(
     "-log",
     "--loglevel",
     choices=["debug", "info", "warning", "error"],
-    default="info",
+    default="warning",
     help="Provide logging level. Example --loglevel debug, default=warning",
 )
 args = parser.parse_args()
@@ -85,7 +85,7 @@ def process(user_data_library, folder):
                     logger.debug(f"Skip {content['name']}")
                     continue
                 else:
-                    logger.info(f"Consider {content['name']}")
+                    logger.warning(f"Consider {content['name']}")
             cnt += 1
             if args.delete:
                 gi.folders.delete_folder(content["id"])
@@ -103,8 +103,8 @@ def process(user_data_library, folder):
 
 cnt = process(user_data_library, root_folder)
 
-if args.delete:
-    if cnt > 0:
-        logger.warning(f"Deleted {cnt} user folders")
-else:
-    logger.info(f"Could delete {cnt} user folders")
+if cnt > 0:
+    if args.delete:
+        logger.warning(f"Deleted {cnt} user library folders")
+    else:
+        logger.info(f"Could delete {cnt} user library folders")
