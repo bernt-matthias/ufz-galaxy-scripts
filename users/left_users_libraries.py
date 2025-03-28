@@ -14,7 +14,12 @@ parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
 parser.add_argument(
-    "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
+    "--key",
+    type=str,
+    action="store",
+    required=False,
+    default=None,
+    help="API key, better set API_KEY env var",
 )
 parser.add_argument(
     "--all-users",
@@ -50,59 +55,56 @@ logger.addHandler(handler)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
-key = os.environ.get('GALAXY_API_KEY', args.key)
+key = os.environ.get("GALAXY_API_KEY", args.key)
 gi = GalaxyInstance(url=args.url, key=key)
 
 users = gi.users.get_users()
 usernames = set(user.get("username") for user in users)
 
 user_data_library = gi.libraries.get_libraries(name="user_data")[0]
-root_folder = gi.libraries.show_folder(library_id=user_data_library['id'], folder_id = user_data_library["root_folder_id"])
+root_folder = gi.libraries.show_folder(
+    library_id=user_data_library["id"], folder_id=user_data_library["root_folder_id"]
+)
 
-def recurse(user_data_library, folder):
+
+def process(user_data_library, folder):
     cnt = 0
-    size = 0
     folder_id = folder["id"]
     item_count = gi.folders.show_folder(folder_id=folder_id)["item_count"]
-    folder_details = gi.folders.show_folder(folder_id=folder_id, contents=True, limit=item_count)
+    folder_details = gi.folders.show_folder(
+        folder_id=folder_id, contents=True, limit=item_count
+    )
 
     metadata = folder_details["metadata"]
     full_path = [c[1] for c in metadata["full_path"]]
-    full_path_str = '/'.join(full_path)
+    full_path_str = "/".join(full_path)
     for content in folder_details["folder_contents"]:
-        if content["type"] == 'folder':
+        if content["type"] == "folder":
             if len(full_path) == 1:
                 if not args.all_users and content["name"] in usernames:
                     logger.debug(f"Skip {content['name']}")
                     continue
-                else :
+                else:
                     logger.info(f"Consider {content['name']}")
-
-            rcnt, rsize = recurse(user_data_library, content)
-            cnt += rcnt
-            size += rsize
-
             cnt += 1
             if args.delete:
                 gi.folders.delete_folder(content["id"])
-                logger.info(f"Deleted folder '{content['name']}' in {full_path_str}")
+                logger.warning(f"Deleted folder '{content['name']}' in {full_path_str}")
             else:
-                logger.info(f"Could delete folder '{content['name']}' in {full_path_str}")
-        elif content["type"] == "file":
-            size += content['raw_size']
-            if args.delete:
-                gi.libraries.delete_library_dataset(user_data_library["id"], content["id"], purged=True)
-                logger.info(f"Deleted dataset '{content['name']}' ({content['file_size']}) in {full_path_str}")
-            else:
-                logger.info(f"Could delete dataset '{content['name']}' ({content['file_size']}) in {full_path_str}")
+                logger.warning(
+                    f"Could delete folder '{content['name']}' in {full_path_str}"
+                )
         else:
-            logger.error(f"Unknown content type: {content['type']} in {full_path=} {metadata=}")
-    return cnt, size
+            logger.error(
+                f"Unknown content type: {content['type']} in {full_path=} {metadata=}"
+            )
+    return cnt
 
-cnt, size = recurse(user_data_library, root_folder)
 
-if args.delete:
-    if size > 0:
-        logger.warning(f"Deleted {cnt} folders and {size / (1024**3)} GB")
-else:
-    logger.info(f"Could delete {cnt} folders {size / (1024**3)} GB")
+cnt = process(user_data_library, root_folder)
+
+if cnt > 0:
+    if args.delete:
+        logger.warning(f"Deleted {cnt} user library folders")
+    else:
+        logger.warning(f"Could delete {cnt} user library folders")
