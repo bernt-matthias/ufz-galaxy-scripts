@@ -29,7 +29,6 @@ logging.getLogger().setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 # Set the log level for your logger to the desired level (e.g., INFO)
 logger.setLevel(args.loglevel.upper())
-
 # Create a handler for logging output (e.g., console handler)
 handler = logging.StreamHandler()
 logger.addHandler(handler)
@@ -69,7 +68,8 @@ for i, tool in enumerate(tools):
     tool_list[(name, owner)]["revisions"].add(revision)
 
 for tool in tool_list:
-    tool_list[tool]["revisions"] = list(tool_list[tool]["revisions"])
+    tool_list[tool]["revisions"] = sorted(tool_list[tool]["revisions"])
+
 
 with open("tool_list.yaml.lock", "w") as lock_f:
     lock_f.write(
@@ -78,7 +78,7 @@ with open("tool_list.yaml.lock", "w") as lock_f:
                 "install_repository_dependencies": True,
                 "install_resolver_dependencies": False,
                 "install_tool_dependencies": False,
-                "tools": list(tool_list.values()),
+                "tools": sorted(tool_list.values(), key=lambda d: d['name']),
             }
         )
     )
