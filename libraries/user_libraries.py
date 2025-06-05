@@ -13,7 +13,12 @@ parser.add_argument(
     "--url", type=str, action="store", required=True, default=None, help="Galaxy URL"
 )
 parser.add_argument(
-    "--key", type=str, action="store", required=False, default=None, help="API key, better set API_KEY env var"
+    "--key",
+    type=str,
+    action="store",
+    required=False,
+    default=None,
+    help="API key, better set API_KEY env var",
 )
 parser.add_argument(
     "--ldap-url",
@@ -45,9 +50,10 @@ logger.addHandler(handler)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
-key = os.environ.get('GALAXY_API_KEY', args.key)
+key = os.environ.get("GALAXY_API_KEY", args.key)
 gi = GalaxyInstance(url=args.url, key=key)
 
+# get LDAP users
 ldap_conn = Connection(args.ldap_url, auto_bind=True)
 base_dn = "ou=people,dc=ufz,dc=de"
 ldap_conn.search(base_dn, "(objectClass=*)", SUBTREE, attributes=["uid", "cn", "mail"])
@@ -57,18 +63,20 @@ for entry in ldap_conn.entries:
 ldap_conn.unbind()
 logger.info(f"Found {len(ldap_users)} users in LDAP")
 
+# determine config dir
 config = gi.config.get_config()
 user_library_import_dir = config.get("user_library_import_dir")
 if not user_library_import_dir:
     logging.error("no user import directory defined")
     exit(1)
 
-uil = gi.libraries.get_libraries(name = "user_data")
+# get library
+uil = gi.libraries.get_libraries(name="user_data")
 if len(uil) == 0:
     uil = gi.libraries.create_library(
         name="user_data",
         description="user libraries",
-        synopsis="User libraries for importing from User library import directory"
+        synopsis="User libraries for importing from User library import directory",
     )
     logging.info("Created user import library user_data")
 elif len(uil) == 1:
@@ -79,12 +87,12 @@ else:
 uil_id = uil["id"]
 uil_root_folder_id = uil["root_folder_id"]
 
+# get roles for setting library permissions
 roles = {}
 for r in gi.roles.get_roles():
     roles[r["name"]] = r["id"]
 
 # create library import folders in the user import library
-# - skip users with empty common name (deleted users)
 # - skip sonkurs and songalax
 users = gi.users.get_users()
 for user in users:
@@ -92,7 +100,7 @@ for user in users:
     userid = user["id"]
     username = user["username"]
     email = user["email"]
-    
+
     common_name = ldap_users.get(username)
     if not common_name:
         logging.error(f"User {username} absent in LDAP")
@@ -106,22 +114,56 @@ for user in users:
         import_dir = import_dir[6:]
     if not os.path.exists(import_dir):
         os.mkdir(import_dir)
-        proc = subprocess.run(["setfacl", "-R", "-m", "u:songalax:rwX", "-m", "d:u:songalax:rwX", import_dir])
+        proc = subprocess.run(
+            [
+                "setfacl",
+                "-R",
+                "-m",
+                "u:songalax:rwX",
+                "-m",
+                "d:u:songalax:rwX",
+                import_dir,
+            ]
+        )
         proc.check_returncode()
-        proc = subprocess.run(["setfacl", "-R", "-m", "u:{username}:rwX", "-m", "d:u:{username}:rwX", import_dir])
+        proc = subprocess.run(
+            [
+                "setfacl",
+                "-R",
+                "-m",
+                "u:{username}:rwX",
+                "-m",
+                "d:u:{username}:rwX",
+                import_dir,
+            ]
+        )
         proc.check_returncode()
-        proc = subprocess.run(["setfacl", "-R", "-m", "m::rwx", "-m", "d:m::rwx", import_dir])
+        proc = subprocess.run(
+            ["setfacl", "-R", "-m", "m::rwx", "-m", "d:m::rwx", import_dir]
+        )
         proc.check_returncode()
     else:
-        proc = subprocess.run(["sudo", "/global/apps/galaxy/scripts/external_chown_script.py", import_dir, "songalax", "eve_galaxy"])
+        proc = subprocess.run(
+            [
+                "sudo",
+                "/global/apps/galaxy/scripts/external_chown_script.py",
+                import_dir,
+                "songalax",
+                "eve_galaxy",
+            ]
+        )
         proc.check_returncode()
-        proc = subprocess.run(["find", import_dir, "-type", "f", "-mtime", "+60", "-delete"])
+        proc = subprocess.run(
+            ["find", import_dir, "-type", "f", "-mtime", "+60", "-delete"]
+        )
         proc.check_returncode()
 
     # create library folder for the user
     uif = gi.libraries.get_folders(uil_id, name=f"/{username}")
     if len(uif) == 0:
-        uif = gi.folders.create_folder(uil_root_folder_id, name=username, description=common_name)
+        uif = gi.folders.create_folder(
+            uil_root_folder_id, name=username, description=common_name
+        )
         logging.info(f"Created new library folder for {username}")
     elif len(uif) == 1:
         uif = uif[0]
@@ -130,11 +172,12 @@ for user in users:
         for f in uif[1:]:
             gi.folders.delete_folder(f["id"])
         uif = uif[0]
-    
+
     # set permissions
     user_role_id = roles[email]
     gi.folders.set_permissions(
-        uif["id"], add_ids=[user_role_id], manage_ids=[user_role_id], modify_ids=[user_role_id]
+        uif["id"],
+        add_ids=[user_role_id],
+        manage_ids=[user_role_id],
+        modify_ids=[user_role_id],
     )
-
-
