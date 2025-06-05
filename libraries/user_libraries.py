@@ -46,7 +46,7 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 
 key = os.environ.get('GALAXY_API_KEY', args.key)
-gi = GalaxyInstance(url=args.url, key=key, verify=False)
+gi = GalaxyInstance(url=args.url, key=key)
 
 ldap_conn = Connection(args.ldap_url, auto_bind=True)
 base_dn = "ou=people,dc=ufz,dc=de"
@@ -87,7 +87,6 @@ for r in gi.roles.get_roles():
 # - skip users with empty common name (deleted users)
 # - skip sonkurs and songalax
 users = gi.users.get_users()
-print(len(users))
 for user in users:
     # logging.debug(f"{user=}")
     userid = user["id"]
@@ -103,25 +102,34 @@ for user in users:
 
     # create directory
     import_dir = os.path.join(user_library_import_dir, email)
+    if import_dir.startswith("/gpfs"):
+        import_dir = import_dir[6:]
     if not os.path.exists(import_dir):
         os.mkdir(import_dir)
         proc = subprocess.run(["setfacl", "-R", "-m", "u:songalax:rwX", "-m", "d:u:songalax:rwX", import_dir])
+        proc.check_returncode()
         proc = subprocess.run(["setfacl", "-R", "-m", "u:{username}:rwX", "-m", "d:u:{username}:rwX", import_dir])
+        proc.check_returncode()
         proc = subprocess.run(["setfacl", "-R", "-m", "m::rwx", "-m", "d:m::rwx", import_dir])
+        proc.check_returncode()
     else:
         proc = subprocess.run(["sudo", "/global/apps/galaxy/scripts/external_chown_script.py", import_dir, "songalax", "eve_galaxy"])
+        proc.check_returncode()
         proc = subprocess.run(["find", import_dir, "-type", "f", "-mtime", "+60", "-delete"])
+        proc.check_returncode()
 
     # create library folder for the user
-    uif = gi.libraries.get_folders(uil_id, name=username)
+    uif = gi.libraries.get_folders(uil_id, name=f"/{username}")
     if len(uif) == 0:
         uif = gi.folders.create_folder(uil_root_folder_id, name=username, description=common_name)
         logging.info(f"Created new library folder for {username}")
     elif len(uif) == 1:
         uif = uif[0]
     else:
-        logging.error(f"Found more than one library import folder for uname {username}. Not setting permissions")
-        continue
+        logging.error(f"Found more than one library import folder for uname {username}")
+        for f in uif[1:]:
+            gi.folders.delete_folder(f["id"])
+        uif = uif[0]
     
     # set permissions
     user_role_id = roles[email]
