@@ -131,9 +131,9 @@ for user in users:
                 "setfacl",
                 "-R",
                 "-m",
-                "u:{username}:rwX",
+                f"u:{username}:rwX",
                 "-m",
-                "d:u:{username}:rwX",
+                f"d:u:{username}:rwX",
                 import_dir,
             ]
         )
