@@ -102,13 +102,16 @@ history_client = HistoryClient(galaxy_instance)
 offset = 1
 while True:
     histories = history_client.get_histories(
-        all=True, limit=USER_BATCH_SIZE, offset=offset, keys=["id", "user_id", "size"]
+        all=True, limit=USER_BATCH_SIZE, offset=offset, keys=["id", "user_id", "size", "archived", "purged"]
     )
     if not histories:
         break
     offset += USER_BATCH_SIZE
 
     for history in histories:
+        if history["archived"] or history["purged"]:
+            logger.info(f"Ignoring history {history['id']} archived {history['archived']} purged {history['purged']}")
+            continue
         user_id = history["user_id"]
         size = history["size"]
         if user_id not in user_by_id:
